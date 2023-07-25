@@ -76,20 +76,25 @@ void WorkerBrokerageClient::FindWorkers( Array< AString > & outWorkerList )
         }
 
         // presize
-        if ( ( workerList.GetSize() + m_WorkerListUpdate.GetSize() ) > workerList.GetCapacity() )
+        if ( ( outWorkerList.GetSize() + m_WorkerListUpdate.GetSize() ) > outWorkerList.GetCapacity() )
         {
-            workerList.SetCapacity( workerList.GetSize() + m_WorkerListUpdate.GetSize() );
+            outWorkerList.SetCapacity( outWorkerList.GetSize() + m_WorkerListUpdate.GetSize() );
         }
 
         // convert worker strings
         const uint32_t * const end = m_WorkerListUpdate.End();
+
+        // Get addresses for the local host
+        StackArray<AString> localAddresses;
+        Network::GetIPv4Addresses( localAddresses );
+
         for ( uint32_t * it = m_WorkerListUpdate.Begin(); it != end; ++it )
         {
             AStackString<> workerName;
             TCPConnectionPool::GetAddressAsString( *it, workerName );
-            if ( workerName.CompareI( m_HostName ) != 0 && workerName.CompareI( "127.0.0.1" ) )
+            if ( localAddresses.Find( workerName ) != 0 && workerName.CompareI( "127.0.0.1" ) )
             {
-                workerList.Append( workerName );
+                outWorkerList.Append( workerName );
             }
             else
             {
@@ -99,7 +104,7 @@ void WorkerBrokerageClient::FindWorkers( Array< AString > & outWorkerList )
 
         m_WorkerListUpdate.Clear();
     }
-    else if ( !m_BrokerageRoot.IsEmpty() )
+    else if ( !m_BrokerageRoots.IsEmpty() )
     {
         Array< AString > results( 256, true );
         for( AString& root : m_BrokerageRoots )

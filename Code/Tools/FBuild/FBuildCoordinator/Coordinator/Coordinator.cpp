@@ -32,17 +32,15 @@ Coordinator::~Coordinator()
 
 // Start
 //------------------------------------------------------------------------------
-int32_t Coordinator::Start()
+uint32_t Coordinator::Start()
 {
     // spawn work thread
-    m_WorkThread = Thread::CreateThread( &WorkThreadWrapper,
-                                        "CoordinatorThread",
-                                        ( 256 * KILOBYTE ),
-                                        this );
+    m_WorkThread.Start( WorkThreadWrapper, "CoordinatorThread", this, ( 256 * KILOBYTE ) );
+
     ASSERT( m_WorkThread != INVALID_THREAD_HANDLE );
 
     // Join work thread and get exit code
-    return Thread::WaitForThread( m_WorkThread );
+    return m_WorkThread.Join();
 }
 
 // WorkThreadWrapper
@@ -74,7 +72,7 @@ uint32_t Coordinator::WorkThread()
         Thread::Sleep( 500 );
     }
 
-    return 0;
+    //return 0;
 }
 
 //------------------------------------------------------------------------------

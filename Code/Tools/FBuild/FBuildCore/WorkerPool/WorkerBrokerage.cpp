@@ -67,6 +67,12 @@ WorkerBrokerage::WorkerBrokerage()
 {
 }
 
+void WorkerBrokerage::UpdateWorkerList( Array< uint32_t > &workerListUpdate )
+{
+    m_WorkerListUpdate.Swap( workerListUpdate );
+    m_WorkerListUpdateReady = true;
+}
+
 // InitBrokerage
 //------------------------------------------------------------------------------
 void WorkerBrokerage::InitBrokerage()

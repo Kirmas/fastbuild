@@ -22,7 +22,7 @@ public:
     explicit Coordinator( const AString & args );
     ~Coordinator();
 
-    int32_t Start();
+    uint32_t Start();
 
 private:
     static uint32_t WorkThreadWrapper( void * userData );
@@ -30,7 +30,7 @@ private:
 
     AString                 m_BaseArgs;
     WorkerConnectionPool    * m_ConnectionPool;
-    Thread::ThreadHandle    m_WorkThread;
+    Thread                  m_WorkThread;
 };
 
 //------------------------------------------------------------------------------

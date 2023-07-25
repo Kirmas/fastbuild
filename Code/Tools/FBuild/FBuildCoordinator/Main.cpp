@@ -79,5 +79,5 @@ int Main( const AString & args )
 
     Coordinator coordinator( args );
 
-    return coordinator.Start();
+    return static_cast<int>(coordinator.Start());
 }
