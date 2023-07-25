@@ -34,6 +34,15 @@ Coordinator::~Coordinator()
 //------------------------------------------------------------------------------
 uint32_t Coordinator::Start()
 {
+        #if __WINDOWS__
+            VERIFY( ::AllocConsole() );
+            PRAGMA_DISABLE_PUSH_MSVC( 4996 ) // This function or variable may be unsafe...
+            PRAGMA_DISABLE_PUSH_CLANG_WINDOWS( "-Wdeprecated-declarations" ) // 'freopen' is deprecated: This function or variable may be unsafe...
+            VERIFY( freopen( "CONOUT$", "w", stdout ) ); // TODO:C consider using freopen_s
+            PRAGMA_DISABLE_POP_CLANG_WINDOWS // -Wdeprecated-declarations
+            PRAGMA_DISABLE_POP_MSVC // 4996
+        #endif
+
     // spawn work thread
     m_WorkThread.Start( WorkThreadWrapper, "CoordinatorThread", this, ( 256 * KILOBYTE ) );
 

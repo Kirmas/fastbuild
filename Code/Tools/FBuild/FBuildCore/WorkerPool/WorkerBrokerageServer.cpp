@@ -72,7 +72,7 @@ void WorkerBrokerageServer::SetAvailability( bool available )
                 msg.Send( m_Connection );
                 DisconnectFromCoordinator();
             }
-            else
+            else if(m_BrokerageRoots.IsEmpty() == false)
             {
                 // If settings have changed, (re)create the file 
                 // If settings have not changed, update the modification timestamp
@@ -198,7 +198,7 @@ void WorkerBrokerageServer::SetAvailability( bool available )
             msg.Send( m_Connection );
             DisconnectFromCoordinator();
         }
-        else
+        else if(m_BrokerageRoots.IsEmpty() == false)
         {
             // remove file to remove availability
             FileIO::FileDelete( m_BrokerageFilePath.Get() );
@@ -210,7 +210,7 @@ void WorkerBrokerageServer::SetAvailability( bool available )
     m_Available = available;
 
     // Handle brokerage cleaning
-    if ( m_TimerLastCleanBroker.GetElapsed() >= sBrokerageElapsedTimeBetweenClean )
+    if (m_CoordinatorAddress.IsEmpty() && m_TimerLastCleanBroker.GetElapsed() >= sBrokerageElapsedTimeBetweenClean )
     {
         const uint64_t fileTimeNow = Time::FileTimeToSeconds( Time::GetCurrentFileTime() );
 

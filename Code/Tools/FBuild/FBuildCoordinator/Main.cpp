@@ -13,7 +13,10 @@
 #include "Core/Process/SystemMutex.h"
 #include "Core/Tracing/Tracing.h"
 
-#include <stdio.h>
+// system
+#if defined( __WINDOWS__ )
+    #include "Core/Env/WindowsHeader.h"
+#endif
 
 // Global Data
 //------------------------------------------------------------------------------
@@ -35,23 +38,40 @@ int Main( const AString & args );
 
 // main
 //------------------------------------------------------------------------------
-int main(int argc, char * argv[])
-{
-    AStackString<> args;
-    for ( int i=1; i<argc; ++i ) // NOTE: Skip argv[0] exe name
+#if defined( __WINDOWS__ )
+    PRAGMA_DISABLE_PUSH_MSVC( 28251 ) // don't complain about missing annotations on WinMain
+    int WINAPI WinMain( HINSTANCE /*hInstance*/,
+                        HINSTANCE /*hPrevInstance*/,
+                        LPSTR lpCmdLine,
+                        int /*nCmdShow*/ )
     {
-        if ( i > 0 )
-        {
-            args += ' ';
-        }
-        args += argv[ i ];
+        AStackString<> args( lpCmdLine );
+        const int32_t result = Main( args );
+        PROFILE_SYNCHRONIZE
+        return result;
     }
+    PRAGMA_DISABLE_POP_MSVC
+#else
+    int main(int argc, char * argv[])
+    {
+        AStackString<> args;
+        for ( int i=1; i<argc; ++i ) // NOTE: Skip argv[0] exe name
+        {
+            if ( i > 0 )
+            {
+                args += ' ';
+            }
+            args += argv[ i ];
+        }
 
-    // This wrapper is purely for profiling scope
-    int result = Main( args );
-    PROFILE_SYNCHRONIZE // make sure no tags are active and do one final sync
-    return result;
-}
+        // This wrapper is purely for profiling scope
+        int result = Main( args );
+        PROFILE_SYNCHRONIZE // make sure no tags are active and do one final sync
+        return result;
+    }
+#endif
+
+#include <stdio.h>
 
 // Main
 //------------------------------------------------------------------------------

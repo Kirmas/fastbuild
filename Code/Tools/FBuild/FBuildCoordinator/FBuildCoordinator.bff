@@ -12,6 +12,31 @@
         Using( .BuildConfig )
         .OutputBase + '/$Platform$-$BuildConfigName$'
 
+        // Windows Resources
+        //--------------------------------------------------------------------------
+        #if __WINDOWS__
+            ObjectList( '$ProjectName$-Res-$Platform$-$BuildConfigName$' )
+            {
+                .Compiler                   = 'ResourceCompiler'
+                .CompilerOutputExtension    = '.res'
+                .CompilerOptions            = '/nologo /fo"%2" "%1"'
+                .CompilerInputFiles         = 'Tools/FBuild/FBuildWorker/MainWindowResource.rc'
+                .CompilerOutputPath         = '$OutputBase$/$ProjectName$/'
+            }
+        #endif
+
+        // OSX Resources
+        //--------------------------------------------------------------------------
+        #if __OSX__
+            Exec( '$ProjectName$-OSXRes-$Platform$-$BuildConfigName$' )
+            {
+                .ExecExecutable             = .Linker
+                .ExecInput                  = 'Tools/FBuild/Icons/16x16_blue.png'
+                .ExecArguments              = '-r -o "%2" -sectcreate binary trayicon "%1"'
+                .ExecOutput                 = '$OutputBase$/$ProjectName$/16x16_blue.o'
+            }
+        #endif
+
         // Unity
         //--------------------------------------------------------------------------
         Unity( '$ProjectName$-Unity-$Platform$-$BuildConfigName$' )
@@ -30,7 +55,19 @@
 
             // Output
             .CompilerOutputPath         = '$OutputBase$/$ProjectPath$/'
+            
+            #if __WINDOWS__
+                .CompilerOptions        + ' -D"PSAPI_VERSION=1"'
+            #endif
         }
+
+        // Windows Manifest
+        //--------------------------------------------------------------------------
+        #if __WINDOWS__
+            .ManifestFile = '$OutputBase$/$ProjectPath$/$ProjectName$$ExeExtension$.manifest.tmp'
+            CreateManifest( '$ProjectName$-Manifest-$Platform$-$BuildConfigName$'
+                            .ManifestFile )
+        #endif
 
         // Executable
         //--------------------------------------------------------------------------
@@ -39,21 +76,42 @@
             .Libraries                  = {
                                             'FBuildCoordinator-Lib-$Platform$-$BuildConfigName$',
                                             'FBuildCore-Lib-$Platform$-$BuildConfigName$',
+                                            'OSUI-Lib-$Platform$-$BuildConfigName$'
                                             'Core-Lib-$Platform$-$BuildConfigName$',
                                             'LZ4-Lib-$Platform$-$BuildConfigName$'
+                                            'xxHash-Lib-$Platform$-$BuildConfigName$'
                                           }
+                                        #if __WINDOWS__
+                                            + 'FBuildCoordinator-Res-$Platform$-$BuildConfigName$'
+                                        #endif
+                                        #if __OSX__
+                                            + '$ProjectName$-OSXRes-$Platform$-$BuildConfigName$' 
+                                        #endif
             #if __LINUX__
                 .LinkerOutput               = '$OutputBase$/$ProjectPath$/fbuildcoordinator$ExeExtension$' // NOTE: lower case
             #else
                 .LinkerOutput               = '$OutputBase$/$ProjectPath$/FBuildCoordinator$ExeExtension$'
             #endif
             #if __WINDOWS__
-                .LinkerOptions              + ' /SUBSYSTEM:CONSOLE'
+                .LinkerOptions              + ' /SUBSYSTEM:WINDOWS'
                                             + ' Advapi32.lib'
+                                            + ' Iphlpapi.lib'
                                             + ' kernel32.lib'
                                             + ' Ws2_32.lib'
                                             + ' User32.lib'
+                                            + ' Shell32.lib'
+                                            + ' Comctl32.lib'
+                                            + ' Gdi32.lib'
+                                            + ' psapi.lib'
                                             + .CRTLibs_Static
+
+                // Manifest
+                .LinkerAssemblyResources    = .ManifestFile
+                .LinkerOptions              + ' /MANIFEST:EMBED'
+                                            + ' /MANIFESTINPUT:%3'
+            #endif
+            #if __OSX__
+                .LinkerOptions              + ' -framework Cocoa'
             #endif
             #if __LINUX__
                 .LinkerOptions              + ' -pthread -ldl -lrt'
@@ -77,7 +135,20 @@
             ^ProjectConfigs             + .ProjectConfig
         #endif
     }
-
+    
+    // Create Universal binaries
+    #if CLANG_SUPPORTS_ARMOSX
+        ForEach( .BuildConfig in .BuildConfigs )
+        {
+            Using( .BuildConfig )
+            If( .Platform == 'ARMOSX' )
+            {
+                CreateUniversalBinary( .ProjectName, .ProjectPath, .BuildConfigName, .OutputBase )
+                ^'Targets_OSX_$BuildConfigName$' + { '$ProjectName$-OSX-$BuildConfigName$' }
+            }
+        }
+    #endif
+    
     // Aliases
     //--------------------------------------------------------------------------
     CreateCommonAliases( .ProjectName )
