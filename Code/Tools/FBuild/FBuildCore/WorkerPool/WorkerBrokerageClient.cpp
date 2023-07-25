@@ -46,52 +46,102 @@ void WorkerBrokerageClient::FindWorkers( Array< AString > & outWorkerList )
 
     // Init the brokerage
     InitBrokerage();
-    if ( m_BrokerageRoots.IsEmpty() )
+    if ( m_BrokerageRoots.IsEmpty() && m_CoordinatorAddress.IsEmpty())
     {
-        FLOG_WARN( "No brokerage root; did you set FASTBUILD_BROKERAGE_PATH?" );
+        FLOG_WARN( "No brokerage root and no coordinator available; did you set FASTBUILD_BROKERAGE_PATH?" );
         return;
     }
 
-    Array< AString > results( 256, true );
-    for( AString& root : m_BrokerageRoots )
+    if ( ConnectToCoordinator() )
     {
-        const size_t filesBeforeSearch = results.GetSize();
-        if ( !FileIO::GetFiles( root,
-                                AStackString<>( "*" ),
-                                false,
-                                &results ) )
+        m_WorkerListUpdateReady = false;
+
+        OUTPUT( "Requesting worker list\n");
+
+        Protocol::MsgRequestWorkerList msg;
+        msg.Send( m_Connection );
+
+        while ( m_WorkerListUpdateReady == false )
         {
-            FLOG_WARN( "No workers found in '%s'", root.Get() );
+            Thread::Sleep( 1 );
         }
-        else
+
+        DisconnectFromCoordinator();
+
+        OUTPUT( "Worker list received: %u workers\n", (uint32_t)m_WorkerListUpdate.GetSize() );
+        if ( m_WorkerListUpdate.GetSize() == 0 )
         {
-            FLOG_WARN( "%zu workers found in '%s'", results.GetSize() - filesBeforeSearch, root.Get() );
+            FLOG_WARN( "No workers received from coordinator" );
+            return; // no files found
         }
+
+        // presize
+        if ( ( workerList.GetSize() + m_WorkerListUpdate.GetSize() ) > workerList.GetCapacity() )
+        {
+            workerList.SetCapacity( workerList.GetSize() + m_WorkerListUpdate.GetSize() );
+        }
+
+        // convert worker strings
+        const uint32_t * const end = m_WorkerListUpdate.End();
+        for ( uint32_t * it = m_WorkerListUpdate.Begin(); it != end; ++it )
+        {
+            AStackString<> workerName;
+            TCPConnectionPool::GetAddressAsString( *it, workerName );
+            if ( workerName.CompareI( m_HostName ) != 0 && workerName.CompareI( "127.0.0.1" ) )
+            {
+                workerList.Append( workerName );
+            }
+            else
+            {
+                OUTPUT( "Skipping woker %s\n", workerName.Get() );
+            }
+        }
+
+        m_WorkerListUpdate.Clear();
     }
-
-    // presize
-    if ( ( outWorkerList.GetSize() + results.GetSize() ) > outWorkerList.GetCapacity() )
+    else if ( !m_BrokerageRoot.IsEmpty() )
     {
-        outWorkerList.SetCapacity( outWorkerList.GetSize() + results.GetSize() );
-    }
-
-    // Get addresses for the local host
-    StackArray<AString> localAddresses;
-    Network::GetIPv4Addresses( localAddresses );
-
-    // convert worker strings
-    for (const AString & fileName : results )
-    {
-        const char * lastSlash = fileName.FindLast( NATIVE_SLASH );
-        AStackString<> workerName( lastSlash + 1 );
-
-        // Filter out local addresses
-        if ( localAddresses.Find( workerName ) )
+        Array< AString > results( 256, true );
+        for( AString& root : m_BrokerageRoots )
         {
-            continue;
+            const size_t filesBeforeSearch = results.GetSize();
+            if ( !FileIO::GetFiles( root,
+                                    AStackString<>( "*" ),
+                                    false,
+                                    &results ) )
+            {
+                FLOG_WARN( "No workers found in '%s'", root.Get() );
+            }
+            else
+            {
+                FLOG_WARN( "%zu workers found in '%s'", results.GetSize() - filesBeforeSearch, root.Get() );
+            }
         }
 
-        outWorkerList.Append( workerName );
+        // presize
+        if ( ( outWorkerList.GetSize() + results.GetSize() ) > outWorkerList.GetCapacity() )
+        {
+            outWorkerList.SetCapacity( outWorkerList.GetSize() + results.GetSize() );
+        }
+
+        // Get addresses for the local host
+        StackArray<AString> localAddresses;
+        Network::GetIPv4Addresses( localAddresses );
+
+        // convert worker strings
+        for (const AString & fileName : results )
+        {
+            const char * lastSlash = fileName.FindLast( NATIVE_SLASH );
+            AStackString<> workerName( lastSlash + 1 );
+
+            // Filter out local addresses
+            if ( localAddresses.Find( workerName ) )
+            {
+                continue;
+            }
+
+            outWorkerList.Append( workerName );
+        }
     }
 }
 

@@ -236,7 +236,7 @@ ObjectNode::~ObjectNode()
     const bool useCache = ShouldUseCache();
     const bool useDist = m_CompilerFlags.IsDistributable() && m_AllowDistribution && FBuild::Get().GetOptions().m_AllowDistributed;
     const bool useSimpleDist = GetCompiler()->SimpleDistributionMode();
-    bool usePreProcessor = !useSimpleDist && ( useCache || useDist || IsGCC() || IsSNC() || IsClang() || IsClangCl() || IsCodeWarriorWii() || IsGreenHillsWiiU() || IsVBCC() || IsOrbisWavePSSLC() );
+    bool usePreProcessor = !useSimpleDist && ( useCache || useDist || IsGCC() || IsSNC() || ((IsClang() || IsClangCl()) && useDist) || IsCodeWarriorWii() || IsGreenHillsWiiU() || IsVBCC() || IsOrbisWavePSSLC() );
     if ( GetDedicatedPreprocessor() )
     {
         usePreProcessor = true;
@@ -543,10 +543,12 @@ Node::BuildResult ObjectNode::DoBuildWithPreProcessor2( Job * job, bool useDeopt
     bool usePreProcessedOutput = true;
     if ( job->IsLocal() )
     {
-        if ( IsClang() ||
-             IsClangCl() ||
-             IsGCC() ||
-             IsSNC() )
+        if ( IsClang() || IsClangCl() )
+        {
+            usePreProcessedOutput = false;
+        }
+
+        if ( IsGCC() || IsSNC() )
         {
             // Using the PCH with Clang/SNC/GCC doesn't prevent storing to the cache
             // so we can use the PCH accelerated compilation

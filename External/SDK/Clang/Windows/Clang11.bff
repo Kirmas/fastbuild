@@ -169,6 +169,7 @@ Compiler( 'Compiler-Clang11-NonCL' )
 
                                     // Include paths
                                     + ' "-I./"'
+                                    + .VSIncludePaths_ClangCl
 
                                     // x64
                                     + ' -m64'
