@@ -17,6 +17,7 @@
 #include "Core/Network/TCPConnectionPool.h"
 #include "Core/Strings/AStackString.h"
 #include "Core/Time/Time.h"
+#include "Tools/FBuild/FBuildCore/Protocol/Protocol.h"
 
 // Static Data
 //------------------------------------------------------------------------------

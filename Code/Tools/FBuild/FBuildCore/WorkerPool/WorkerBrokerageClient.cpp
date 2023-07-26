@@ -13,7 +13,10 @@
 #include "Core/FileIO/FileIO.h"
 #include "Core/FileIO/PathUtils.h"
 #include "Core/Network/Network.h"
+#include "Core/Network/TCPConnectionPool.h"
 #include "Core/Profile/Profile.h"
+#include "Core/Tracing/Tracing.h"
+#include "Tools/FBuild/FBuildCore/Protocol/Protocol.h"
 
 // CONSTRUCTOR
 //------------------------------------------------------------------------------

@@ -14,6 +14,8 @@
 #include "Core/Profile/Profile.h"
 #include "Core/Tracing/Tracing.h"
 
+#include <stdio.h>
+
 // CONSTRUCTOR
 //------------------------------------------------------------------------------
 Coordinator::Coordinator( const AString & args )
