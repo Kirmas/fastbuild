@@ -95,7 +95,7 @@ void WorkerBrokerageClient::FindWorkers( Array< AString > & outWorkerList )
         {
             AStackString<> workerName;
             TCPConnectionPool::GetAddressAsString( *it, workerName );
-            if ( localAddresses.Find( workerName ) != 0 && workerName.CompareI( "127.0.0.1" ) )
+            if ( localAddresses.Find( workerName ) == 0 && workerName.CompareI( "127.0.0.1" ) )
             {
                 outWorkerList.Append( workerName );
             }
