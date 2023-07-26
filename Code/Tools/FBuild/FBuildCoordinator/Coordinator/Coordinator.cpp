@@ -46,8 +46,6 @@ uint32_t Coordinator::Start()
     // spawn work thread
     m_WorkThread.Start( WorkThreadWrapper, "CoordinatorThread", this, ( 256 * KILOBYTE ) );
 
-    ASSERT( m_WorkThread != INVALID_THREAD_HANDLE );
-
     // Join work thread and get exit code
     return m_WorkThread.Join();
 }
